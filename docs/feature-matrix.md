@@ -1,15 +1,15 @@
 # Component scope and feature matrix
 
-TraceGate contains two related applications with intentionally different responsibilities. They share a manufacturing traceability theme, but they are not interchangeable implementations.
+TraceGate contains a flagship edge runtime and a deliberately narrower companion lab. They share a manufacturing traceability theme, but they are not interchangeable implementations.
 
 ## Why they live together
 
-The former standalone projects both modeled work orders, serial-level state, ordered routes, PASS/FAIL behavior, SQLite history, and idempotent HTTP mutations. Publishing them as two independent MES projects made the portfolio story look repetitive.
+The former standalone projects both modeled work orders, serial-level state, ordered routes, PASS/FAIL behavior, SQLite history, and idempotent HTTP mutations. Publishing them as two independent MES projects made the portfolio story look repetitive. The historical C# repository is therefore preserved as the archived [`tracegate-dotnet-mes-lab`](https://github.com/weiyu1029/tracegate-dotnet-mes-lab), while this repository is the canonical active portfolio.
 
 The consolidated repository presents one TraceGate portfolio with two clearly scoped components:
 
 - **TraceGate Edge** is the flagship Python reference runtime for a small Linux edge node.
-- **TraceGate MES Lab** is a C# / ASP.NET Core companion lab for work-order administration and an operator-facing UI.
+- **TraceGate MES Lab** is a focused C# / ASP.NET Core companion lab for work-order administration and an operator-facing UI.
 
 ## Capability matrix
 

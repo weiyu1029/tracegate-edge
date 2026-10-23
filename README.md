@@ -1,6 +1,6 @@
 # TraceGate Manufacturing Traceability
 
-**Offline-first edge execution, product genealogy, and an operator-facing MES lab in one evidence-backed portfolio.**
+**Flagship offline-first edge execution and product genealogy, supported by a focused operator-facing .NET lab.**
 
 [![TraceGate CI](https://github.com/weiyu1029/tracegate-edge/actions/workflows/ci.yml/badge.svg)](https://github.com/weiyu1029/tracegate-edge/actions/workflows/ci.yml)
 ![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white)
@@ -13,14 +13,14 @@
   <sub>Actual running TraceGate MES Lab interface with synthetic data; not an AI-generated mockup.</sub>
 </p>
 
-TraceGate is an independent manufacturing software portfolio project. It combines a Python reference runtime for a small Linux edge node with a scoped C# / ASP.NET Core MES learning lab. The repository demonstrates deterministic station rules, serial-level traceability, resilient offline delivery, and a clean operator workflow without using employer, customer, or factory code or data.
+TraceGate is an independent manufacturing software portfolio project. **TraceGate Edge is the flagship system:** a Python reference runtime for a small Linux edge node that demonstrates deterministic station rules, serial-level traceability, and resilient offline delivery. A deliberately narrower C# / ASP.NET Core MES lab provides a focused operator-workflow study without using employer, customer, or factory code or data.
 
-## Two components, one portfolio
+## One flagship, one focused lab
 
 | Component | Role | Distinctive evidence |
 | --- | --- | --- |
-| **TraceGate Edge** | Flagship Python reference runtime for a Portenta X8-class edge node | MAC and interface validation, BOM and KPSN genealogy, repair attempts, transactional outbox, retry, dead letter, and replay |
-| **TraceGate MES Lab** | C# / .NET 10 companion lab for work-order and serial workflows | Dynamic work orders, unit registration, hold and release, responsive UI, safe CSV export, and 22 real-process integration tests |
+| **TraceGate Edge** | **Flagship system:** Python reference runtime for a Portenta X8-class edge node | MAC and interface validation, BOM and KPSN genealogy, repair attempts, transactional outbox, retry, dead letter, and replay |
+| **TraceGate MES Lab** | **Focused companion lab:** C# / .NET 10 study of work-order and serial workflows | Dynamic work orders, unit registration, hold and release, responsive UI, safe CSV export, and 22 real-process integration tests |
 
 The applications are intentionally **not presented as equivalent implementations**. Their routes, APIs, identifiers, and databases currently differ. They share one product story and repository while a versioned cross-component contract remains a future milestone. See the [feature matrix](docs/feature-matrix.md).
 
@@ -177,7 +177,7 @@ docker-compose.yml
 Makefile
 ```
 
-The former `traceflow-mes` project was selectively consolidated as the .NET lab. Its exact source commit, license, renaming, and import decisions are recorded in [provenance](docs/provenance/traceflow-mes.md).
+The former standalone `traceflow-mes` project was selectively consolidated as the focused .NET lab. Its historical repository is preserved as the archived [`tracegate-dotnet-mes-lab`](https://github.com/weiyu1029/tracegate-dotnet-mes-lab). The exact source commit, license, renaming, and import decisions are recorded in [provenance](docs/provenance/traceflow-mes.md).
 
 ## Run on a Portenta X8-class edge device
 

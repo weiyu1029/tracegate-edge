@@ -2,7 +2,8 @@
 
 The C# application under `labs/dotnet-mes/` was consolidated from the author's former standalone repository:
 
-- Source: <https://github.com/weiyu1029/traceflow-mes>
+- Original repository name: `traceflow-mes`
+- Preserved source repository: <https://github.com/weiyu1029/tracegate-dotnet-mes-lab> (renamed and archived after consolidation)
 - Imported source commit: `9ccda92d4da194f356ba201c95053da3d347098a`
 - Import date: 2026-10-23
 - Original license: MIT; preserved at `labs/dotnet-mes/LICENSE`

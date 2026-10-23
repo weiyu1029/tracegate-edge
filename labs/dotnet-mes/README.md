@@ -2,7 +2,7 @@
 
 **A focused C# / ASP.NET Core companion lab for work-order and serial-number traceability.**
 
-This application belongs to the broader TraceGate portfolio, but it has a deliberately smaller scope than the Python edge runtime. It demonstrates dynamic work orders, unit registration, ordered station execution, hold and release, append-only history, request idempotency, CSV export, and a responsive operator UI.
+This application is a focused companion to the flagship TraceGate Edge runtime, with a deliberately smaller scope. It demonstrates dynamic work orders, unit registration, ordered station execution, hold and release, append-only history, request idempotency, CSV export, and a responsive operator UI.
 
 It is **not** a second implementation of TraceGate Edge. Its route, API, and database model are independent, and it does not yet implement edge outbox delivery, MAC validation, BOM genealogy, or repair-attempt semantics.
 
@@ -95,4 +95,4 @@ docs/validation.md     Verification record and limits
 
 This is an unauthenticated local learning application. Keep it on localhost, use synthetic data, and do not expose it directly to a public network. It is not a production MES or an ISA-95 conformance claim.
 
-The imported .NET lab remains available under the [MIT License](LICENSE). Its provenance is recorded in the canonical repository's [import note](../../docs/provenance/traceflow-mes.md).
+The imported .NET lab remains available under the [MIT License](LICENSE). Its provenance and archived source repository are recorded in the canonical repository's [import note](../../docs/provenance/traceflow-mes.md).
