@@ -1,26 +1,26 @@
-# 領域模型與狀態機
+# Domain Model and State Machine
 
-本文件定義 TraceGate Edge 的合成製造領域。資料表名稱是這個作品專案自行設計的公開模型，不對應任何真實公司的 schema。
+This document defines TraceGate Edge's synthetic manufacturing domain. The table names are part of a public model designed specifically for this portfolio project; they do not correspond to any real company's schema.
 
-## 名詞
+## Terminology
 
-| 名詞 | 在本專案中的意思 |
+| Term | Meaning in This Project |
 | --- | --- |
-| ACN | 一台合成產品的唯一主身份（unit identity） |
-| Work order | 指定產品型號、route 版本與數量的生產批次 |
-| Route | 產品必須依序通過的製程步驟；以版本固定 |
-| WIP | 該 ACN 現在位於哪一步、狀態與第幾次 attempt |
-| Interface | 產品上的網路介面，例如 `wlan0` 或 `eth0` |
-| MAC | 某個 interface 的通訊身份；不是產品本身的主身份 |
-| Part number | 料件種類 |
-| KPSN | 實際裝入的那一顆關鍵料序號 |
-| Key-part group | 可互為核准替代料的料件集合 |
-| Station event | 一次製程操作的結果與證據 |
-| Audit sequence | 單一 edge SQLite database 內，跨 record type 配發的遞增因果序號 |
-| Defect / repair | FAIL 後的缺陷與修復處置 |
-| Outbox | 已在本地 commit、尚待送往上游的事件 |
+| ACN | The unique primary identity of a synthetic product unit |
+| Work order | A production batch that specifies a product model, route version, and quantity |
+| Route | The ordered sequence of process steps a product must complete; fixed by version |
+| WIP | The ACN's current step, state, and attempt number |
+| Interface | A network interface on the product, such as `wlan0` or `eth0` |
+| MAC | The communication identity of a specific interface; not the product's primary identity |
+| Part number | A component type |
+| KPSN | The serial number of the specific key part installed in a product |
+| Key-part group | A set of mutually approved substitute parts |
+| Station event | The result and evidence associated with one manufacturing operation |
+| Audit sequence | A monotonically increasing causal sequence allocated across record types within one edge SQLite database |
+| Defect / repair | A defect and corrective action following a FAIL result |
+| Outbox | Events committed locally and awaiting delivery to the upstream system |
 
-## 關聯圖
+## Entity Relationships
 
 ```mermaid
 erDiagram
@@ -109,18 +109,18 @@ erDiagram
     }
 ```
 
-## 合成示範資料
+## Synthetic Demo Data
 
-預設 seed 建立三台完全虛構的產品：
+The default seed creates three entirely fictional products:
 
-- Work order：`WO-DEMO-1001`
-- Model：`EDGE-CONTROLLER-A`
-- ACN：`ACN-DEMO-0001` 至 `ACN-DEMO-0003`
-- Route：`ROUTE-DEMO-A` version `1`
-- Interface：每台各有 `wlan0` 與 `eth0`
-- 料件群組：controller 需要 1 顆，sensor 需要 2 顆
+- Work order: `WO-DEMO-1001`
+- Model: `EDGE-CONTROLLER-A`
+- ACNs: `ACN-DEMO-0001` through `ACN-DEMO-0003`
+- Route: `ROUTE-DEMO-A`, version `1`
+- Interfaces: one `wlan0` and one `eth0` per product
+- Part groups: one controller required and two sensors required
 
-MAC 使用 `02` 起頭的 locally administered 位元，避免看起來像真實廠商分配。所有 KPSN 必須由展示者建立虛構值，例如 `KPSN-DEMO-CTRL-001`。
+MAC addresses use a locally administered prefix beginning with `02`, so they do not resemble real vendor assignments. Every KPSN must be a fictional value created by the presenter, such as `KPSN-DEMO-CTRL-001`.
 
 ## Route
 
@@ -137,11 +137,11 @@ flowchart LR
     S70 --> DONE((COMPLETE))
 ```
 
-### Route 版本的重要性
+### Why Route Versions Matter
 
-Work order 參照明確的 `route_id + route_version`。即使日後修改路線，新版也不能悄悄改變已釋放工單的歷史語意。事件本身也保存 route/version/sequence，避免只靠目前設定回推歷史。
+A work order references an explicit `route_id + route_version`. Even if the route changes later, the new version must not silently alter the historical meaning of released work orders. Each event also stores its route, version, and sequence, avoiding historical reconstruction based solely on current configuration.
 
-## WIP 狀態
+## WIP State
 
 ```mermaid
 stateDiagram-v2
@@ -156,17 +156,17 @@ stateDiagram-v2
     COMPLETE --> [*]
 ```
 
-目前實作未必開放 HOLD/RELEASE 寫入端點；資料模型保留狀態，是為了讓 roadmap 可擴充，而不是假稱功能已完成。
+The current implementation may not expose write endpoints for HOLD/RELEASE. The data model retains these states to support future roadmap work, not to imply that the functionality is already complete.
 
-### Attempt 而非「重複阻擋」
+### Attempts, Not Blanket Duplicate Blocking
 
-重測是合法的新製造事件，因此不能用「同一 ACN + 同一站永遠只能一次」阻擋。正確模型是：
+A retest is a legitimate new manufacturing event. The system therefore cannot block an ACN from ever visiting the same station more than once. The correct model is:
 
-- 相同 `request_id`：同一次 HTTP 操作的重送，回傳既有結果。
-- 新 `request_id`、相同 attempt 與已完成站點：route violation 或 duplicate operation。
-- 修復完成：`attempt_no + 1`，再次執行測試是新的合法事件。
+- Same `request_id`: a retransmission of the same HTTP operation; return the existing result.
+- New `request_id`, same attempt, and an already completed station: route violation or duplicate operation.
+- Repair completed: increment `attempt_no`; running the test again is a new, valid event.
 
-## 身份模型：ACN、MAC、KPSN 不可混為一談
+## Identity Model: ACN, MAC, and KPSN Are Distinct
 
 ```mermaid
 flowchart TD
@@ -179,60 +179,60 @@ flowchart TD
     ACN --> B3[KPSN sensor 2]
 ```
 
-MAC 驗證必須同時檢查：
+MAC verification must check all of the following:
 
-1. 格式有效。
-2. MAC 存在且狀態允許。
-3. MAC 綁定到請求中的 ACN。
-4. MAC 綁定到請求中的 interface。
-5. 驗證對應目前 sequence 與 attempt。
+1. The format is valid.
+2. The MAC exists and has an allowed status.
+3. The MAC is bound to the ACN in the request.
+4. The MAC is bound to the interface in the request.
+5. The verification corresponds to the current sequence and attempt.
 
-因此「格式正確但屬於另一台產品」必須回傳關聯錯誤，不能 PASS。
+Therefore, a MAC with valid formatting that belongs to another product must return an association error; it must not PASS.
 
-## BOM 與關鍵料
+## BOM and Key Parts
 
-`bom_requirements` 指定某 work order 在某 step 需要哪些 key-part group 及數量。`kp_group_members` 定義正料與核准替代料；兩者分開，才不會把「系統知道的料號」誤當成「本工單允許的料號」。
+`bom_requirements` specifies which key-part groups and quantities a work order requires at a given step. `kp_group_members` defines primary and approved substitute parts. Keeping these concepts separate prevents the system from treating every known part number as approved for a given work order.
 
-收料時至少檢查：
+At collection time, the system checks at least the following:
 
-- ACN 與 WIP 正確。
-- Part number 存在且啟用。
-- Part number 屬於該 requirement group。
-- 若同一 part number 同時命中多個 required groups，現行 API 會以 `AMBIGUOUS_BOM_GROUP` fail closed；未來若要支援此類 BOM，command 必須明確帶入 group identity，不能由資料庫任意挑選。
-- 尚未超過需求數量。
-- KPSN 未綁定到其他產品。
-- `request_id` 沒有被不同 payload 重用。
+- The ACN and WIP state are correct.
+- The part number exists and is active.
+- The part number belongs to the required group.
+- If the same part number matches multiple required groups, the current API fails closed with `AMBIGUOUS_BOM_GROUP`. To support such BOMs in the future, the command must carry an explicit group identity instead of allowing the database to select one arbitrarily.
+- The required quantity has not been exceeded.
+- The KPSN is not bound to another product.
+- The `request_id` has not been reused with a different payload.
 
-## 事件與目前狀態分離
+## Separating Events from Current State
 
-- `wip_state` 是快速回答「現在在哪裡」的 current state。
-- `station_events` 是「曾發生什麼」的 history。
-- `scan_attempts` 可包含被拒絕的輸入，用來分析人機與資料品質問題。
-- `verification_records` 保存 MAC 等前置驗證證據。
-- `audit_log` 以 `record_type + record_id` 對應上述歷史資料，並用 `audit_sequence` 給跨類型紀錄一個 local causal order。
+- `wip_state` answers the fast current-state question: "Where is the unit now?"
+- `station_events` provides the historical answer: "What happened?"
+- `scan_attempts` may include rejected inputs for analyzing human-interface and data-quality issues.
+- `verification_records` preserves prerequisite verification evidence such as MAC checks.
+- `audit_log` maps the historical records above through `record_type + record_id` and assigns an `audit_sequence` to create a local causal order across record types.
 
-只有 current state 而沒有 history，無法稽核；只有 history 而每次重播全部事件，對小型站點 UI 又不實際。兩者在同一交易中保持一致。
+Current state without history is not auditable. Replaying the entire event history for every small-station UI request is also impractical. Both representations remain consistent because the system updates them in the same transaction.
 
-Migration v2 會為既有紀錄補建 audit rows；legacy backfill 只能用既有 timestamp、record kind 與 rowid 建立穩定順序，不能反推過去精確的 commit order。Migration 後的新 domain writes 則在原交易中配發 sequence。這個 sequence 僅在同一 SQLite database／device 內有意義，不是跨 edge nodes 的 global sequence，也不是可信時間戳。
+Migration v2 creates audit rows for existing records. A legacy backfill can use only existing timestamps, record kinds, and row IDs to establish a stable order; it cannot reconstruct the exact historical commit order. New domain writes after migration allocate their sequence within the original transaction. This sequence is meaningful only within one SQLite database/device. It is neither a global sequence across edge nodes nor a trusted timestamp.
 
-## Defect 與 repair
+## Defects and Repairs
 
-功能測試 FAIL 會建立 defect 並將 WIP 導到 repair step。Repair action 應包含結構化 action code、技術人員代號與不含敏感資訊的說明。完成後進入新的 attempt，再回到功能測試。
+A functional-test FAIL creates a defect and routes WIP to the repair step. A repair action should include a structured action code, a technician identifier, and a description that contains no sensitive information. After repair completes, the unit begins a new attempt and returns to functional testing.
 
-不得用 AI 摘要、自由文字或 UI 按鈕直接把 FAIL 改成 PASS。製程結果只能來自 deterministic rule 與明確 station command。
+An AI summary, free-form text, or UI control must never change a FAIL directly to PASS. Manufacturing results can come only from deterministic rules and explicit station commands.
 
-## 建議原因碼
+## Recommended Reason Codes
 
-原因碼是穩定的機器介面；顯示文字可翻譯，邏輯不應依賴文字。
+Reason codes are stable machine interfaces. Display text may be translated, but logic must not depend on that text.
 
-| 類別 | 原因碼例 |
+| Category | Example Reason Codes |
 | --- | --- |
-| 請求 | `INVALID_REQUEST_ID`, `IDEMPOTENCY_CONFLICT` |
-| 產品 | `INVALID_ACN`, `UNKNOWN_ACN`, `UNIT_ON_HOLD` |
-| 站序 | `ROUTE_VIOLATION`, `INVALID_REASON_CODE`, `STATION_MISMATCH`, `DUPLICATE_OPERATION` |
+| Request | `INVALID_REQUEST_ID`, `IDEMPOTENCY_CONFLICT` |
+| Product | `INVALID_ACN`, `UNKNOWN_ACN`, `UNIT_ON_HOLD` |
+| Route | `ROUTE_VIOLATION`, `INVALID_REASON_CODE`, `STATION_MISMATCH`, `DUPLICATE_OPERATION` |
 | MAC | `INVALID_MAC_FORMAT`, `UNKNOWN_MAC`, `ASSOCIATION_MISMATCH`, `WRONG_INTERFACE` |
-| 關鍵料 | `UNKNOWN_PART`, `MATERIAL_NOT_IN_BOM`, `AMBIGUOUS_BOM_GROUP`, `KPSN_ALREADY_BOUND`, `QUANTITY_EXCEEDED` |
-| 維修 | `NO_OPEN_DEFECT`, `REPAIR_ACTION_REQUIRED` |
-| 傳輸 | `UPSTREAM_UNAVAILABLE`, `OUTBOX_DEAD_LETTER` |
+| Key parts | `UNKNOWN_PART`, `MATERIAL_NOT_IN_BOM`, `AMBIGUOUS_BOM_GROUP`, `KPSN_ALREADY_BOUND`, `QUANTITY_EXCEEDED` |
+| Repair | `NO_OPEN_DEFECT`, `REPAIR_ACTION_REQUIRED` |
+| Delivery | `UPSTREAM_UNAVAILABLE`, `OUTBOX_DEAD_LETTER` |
 
-端點實際回傳集合以自動化測試與目前程式碼為準。新增原因碼時，要同步文件、測試及 demo。
+The actual endpoint response set is defined by the current code and automated tests. When adding a reason code, update the documentation, tests, and demo together.

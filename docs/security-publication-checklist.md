@@ -1,44 +1,44 @@
-# 安全與公開發布檢查表
+# Security and Public Release Checklist
 
-這是把 TraceGate Edge 放上公開 GitHub、LinkedIn 或作品集前的 release gate。每次發布都重新執行，不要因為前一版安全就直接假設下一版也安全。
+This is the release gate for publishing TraceGate Edge on a public GitHub repository, LinkedIn, or a portfolio site. Run it again for every release; do not assume that a new version is safe merely because the previous version was safe.
 
-## 威脅模型與限制
+## Threat Model and Limitations
 
-目前版本是單人、受信任 LAN 上的教育 demo：
+The current version is a single-user educational demonstration intended for a trusted LAN:
 
-- 沒有登入、角色權限或多因素驗證。
-- 沒有 TLS 終止與正式憑證。
-- 本地 SQLite 沒有欄位級加密。
-- Demo reset、outbox replay 等管理操作不適合公開網路。
-- 標準函式庫 HTTP server 不是 Internet-facing production server。
-- Mock upstream 是測試接收端，不是正式 MES。
+- No login, role-based authorization, or multifactor authentication.
+- No TLS termination or production certificate management.
+- No field-level encryption in the local SQLite database.
+- Administrative operations such as demo reset and outbox replay are not suitable for exposure to a public network.
+- The standard-library HTTP server is not an Internet-facing production server.
+- The mock upstream service is a test receiver, not a production MES.
 
-因此：**只綁定到個人測試網路，絕不做 router port forwarding，也不要部署到公開 IP。**
+Therefore: **bind it only to a personal test network, never configure router port forwarding, and never deploy it on a public IP address.**
 
-## 發布前資料檢查
+## Prepublication Data Review
 
-- [ ] 所有工單、ACN、序號、KPSN、MAC、料號與 route 都是虛構值。
-- [ ] MAC 使用 locally administered 位元，例如 `02:...`。
-- [ ] 沒有真實公司、客戶、供應商、產品代號或內部組織名稱。
-- [ ] 沒有真實 IP、hostname、VPN、UNC/共享路徑或內部 URL。
-- [ ] 沒有真實資料庫名、schema、table、stored procedure、API method 名。
-- [ ] 沒有內部 source、反編譯內容、DLL/PDB、設定檔或專有畫面。
-- [ ] 沒有生產缺陷描述、維修紀錄、操作員資訊或可識別個人的 log。
-- [ ] 截圖的瀏覽器列、終端 prompt、Wi-Fi、IP、使用者名稱與檔案路徑已裁切或遮蔽。
-- [ ] 不提交 `data/`、SQLite、WAL/SHM、coverage、cache 或真實 log。
+- [ ] Every work order, ACN, serial number, KPSN, MAC address, part number, and route is fictional.
+- [ ] MAC addresses use the locally administered bit, for example `02:...`.
+- [ ] No real company, customer, supplier, product code name, or internal organization name appears anywhere.
+- [ ] No real IP address, hostname, VPN identifier, UNC/shared path, or internal URL appears anywhere.
+- [ ] No real database name, schema, table, stored procedure, or API method name appears anywhere.
+- [ ] No internal source code, decompiled content, DLL/PDB file, configuration file, or proprietary screen appears anywhere.
+- [ ] No production defect description, repair record, operator information, or personally identifiable log appears anywhere.
+- [ ] Browser bars, terminal prompts, Wi-Fi details, IP addresses, user names, and file paths are cropped or redacted in screenshots.
+- [ ] Do not commit `data/`, SQLite files, WAL/SHM files, coverage output, caches, or real logs.
 
-## Secret 檢查
+## Secret Review
 
-- [ ] 執行 repository 的 publication check（若提供）：`python3 scripts/public_release_check.py`。
-- [ ] 理解 scanner 邊界：它會遍歷 `data/` 並以檔名拒絕 DB/key/非範例 `.env`，但不讀取超過 2 MB、非 UTF-8、含 NUL 的 binary，或 image/PDF/archive 本文。
-- [ ] 對 scanner 不讀取的 binary、圖片與 PDF 另做 metadata/OCR/人工檢查；對 Git history 另用專用 secret/history scanner。Publication check 通過不等於沒有資料外洩。
-- [ ] 另外執行 `git grep -nEi '(password|secret|token|api[_-]?key|private[_-]?key)'`，逐筆人工判斷。
-- [ ] 搜尋常見憑證格式與私鑰開頭：`BEGIN .* PRIVATE KEY`、雲端 access key、JWT。
-- [ ] 搜尋 email、電話、住址、真實使用者名稱與絕對 home path。
-- [ ] `.env`、credential store、shell history 與 IDE workspace 沒有被追蹤。
-- [ ] 如果秘密曾經 commit，光刪除目前檔案不夠：先輪替秘密，再清理 Git history。
+- [ ] Run the repository's publication check, when provided: `python3 scripts/public_release_check.py`.
+- [ ] Understand the scanner boundary: it traverses `data/` and rejects database/key files and nonexample `.env` files by name, but it does not inspect binaries larger than 2 MB, non-UTF-8 files, files containing NUL bytes, or the contents of images, PDFs, and archives.
+- [ ] Perform a separate metadata, OCR, and manual review of binaries, images, and PDFs that the scanner does not inspect. Use a dedicated secret/history scanner for Git history. Passing the publication check does not prove that no data has leaked.
+- [ ] Also run `git grep -nEi '(password|secret|token|api[_-]?key|private[_-]?key)'` and review every match manually.
+- [ ] Search for common credential formats and private-key headers, including `BEGIN .* PRIVATE KEY`, cloud access keys, and JWTs.
+- [ ] Search for email addresses, phone numbers, street addresses, real user names, and absolute home-directory paths.
+- [ ] Confirm that `.env`, credential stores, shell history, and IDE workspace files are not tracked.
+- [ ] If a secret was ever committed, deleting the current file is not enough: rotate the secret first, then clean the Git history.
 
-## Git 內容檢查
+## Git Content Review
 
 ```sh
 git status --short
@@ -47,71 +47,71 @@ git diff --check
 git log --stat --oneline
 ```
 
-- [ ] `.gitignore` 涵蓋 `data/`, `*.db`, `*.db-*`, `*.sqlite-*`, `*.sqlite3-*`, `.env`, cache 與測試產物。
-- [ ] `git ls-files` 沒有二進位 dump、照片、郵件、聊天匯出或臨時附件。
-- [ ] README 所有命令能從乾淨 checkout 執行。
-- [ ] 連結是 repository 內的相對路徑或公開文件，沒有分享聊天連結。
-- [ ] Commit message 不含客戶、事件單、內部站點或敏感資訊。
-- [ ] 已決定授權條款；在未選擇 license 前，不暗示他人可任意再利用。
+- [ ] `.gitignore` covers `data/`, `*.db`, `*.db-*`, `*.sqlite-*`, `*.sqlite3-*`, `.env`, caches, and test artifacts.
+- [ ] `git ls-files` contains no binary dumps, photographs, emails, chat exports, or temporary attachments.
+- [ ] Every README command works from a clean checkout.
+- [ ] Links use repository-relative paths or public documentation; no shared-chat links remain.
+- [ ] Commit messages contain no customer name, incident number, internal station name, or sensitive information.
+- [ ] Licensing terms have been selected; until a license is chosen, do not imply that others may reuse the work freely.
 
-## 功能與可靠性檢查
+## Functional and Reliability Review
 
-- [ ] 全部自動化測試通過。
-- [ ] 新資料目錄可完成 migration 與 seed。
-- [ ] 相同 `request_id + payload` 重送不產生第二筆業務事件。
-- [ ] 相同 `request_id` 搭配不同 payload 回 conflict。
-- [ ] 錯站、錯 ACN、錯 MAC 關聯、未核准料件與重複 KPSN 都 fail closed。
-- [ ] FAIL → repair → new attempt → retest 有測試。
-- [ ] 中斷 mock upstream 時 outbox 保留；恢復後只產生 unique receipts。
-- [ ] Component re-instantiation test 證明相同 SQLite 檔仍可補送；另以真正 kill/restart 驗證 pending event 仍存在（後者目前需保存手動證據，automated OS process-restart test 尚未加入）。
-- [ ] Dead letter 可見，不會被健康頁標成完全 healthy。
-- [ ] `health` 與版本資訊和實際執行 artifact 一致。
+- [ ] All automated tests pass.
+- [ ] A fresh data directory completes migration and seeding successfully.
+- [ ] Resubmitting the same `request_id + payload` does not create a second business event.
+- [ ] Reusing the same `request_id` with a different payload returns a conflict.
+- [ ] Wrong-station scans, wrong ACNs, incorrect MAC relationships, unapproved parts, and duplicate KPSNs all fail closed.
+- [ ] FAIL -> repair -> new attempt -> retest is covered by tests.
+- [ ] When the mock upstream service is interrupted, the outbox retains events; after recovery, it produces only unique receipts.
+- [ ] A component re-instantiation test proves that the same SQLite file can resume delivery. Separately, use an actual kill/restart experiment to verify that a pending event persists. The latter currently requires preserved manual evidence because an automated operating-system process-restart test has not yet been added.
+- [ ] Dead letters are visible and do not allow the health endpoint to report a fully healthy state.
+- [ ] Health and version information match the artifact that is actually running.
 
-## API 與網路安全檢查
+## API and Network Security Review
 
-- [ ] Demo 管理端點只在開發模式啟用，或清楚標示風險。
-- [ ] Request body 有大小上限、JSON 型別驗證與安全錯誤回覆。
-- [ ] SQL 全部使用參數化 query；不得把掃描值拼接進 SQL。
-- [ ] UI 輸出做 HTML escaping，避免把 barcode 當 HTML。
-- [ ] Error response 不洩漏 stack trace、檔案路徑或 DB 內容。
-- [ ] Upstream URL 來自環境設定；不在 source 寫 token。
-- [ ] 只有在受信任 LAN 綁 `0.0.0.0`；否則使用 `127.0.0.1`。
-- [ ] 不對 Internet 暴露 8080/8081，也不做公網 port forwarding。
+- [ ] Demo administrative endpoints are enabled only in development mode or clearly labeled with their risks.
+- [ ] Request bodies have size limits, JSON type validation, and safe error responses.
+- [ ] Every SQL statement uses parameterized queries; scanned values are never concatenated into SQL.
+- [ ] User-interface output is HTML-escaped so that a barcode cannot be interpreted as HTML.
+- [ ] Error responses disclose no stack trace, file path, or database content.
+- [ ] The upstream URL comes from environment configuration; tokens are never written into source code.
+- [ ] Bind to `0.0.0.0` only on a trusted LAN; otherwise use `127.0.0.1`.
+- [ ] Never expose ports 8080 or 8081 to the Internet, and never configure public port forwarding.
 
-## AI Agent 安全檢查
+## AI Agent Security Review
 
-- [ ] Agent 只能呼叫 read-only health、unit、trace、metrics API。
-- [ ] Agent 沒有 station complete、repair、reset、replay 或設定寫入工具。
-- [ ] Agent 的回答清楚標為解釋/建議，不是製程授權。
-- [ ] PASS/FAIL 只由 deterministic service 根據資料與規則決定。
-- [ ] 送給外部模型前移除可識別、機密及未公開資料。
-- [ ] Prompt injection 內容不能改變工具權限或 domain rule。
+- [ ] The agent may call read-only health, unit, trace, and metrics APIs only.
+- [ ] The agent has no tools for station completion, repair, reset, replay, or configuration writes.
+- [ ] Agent responses are clearly labeled as explanations or recommendations, not manufacturing authorization.
+- [ ] PASS/FAIL is determined only by deterministic service logic using data and rules.
+- [ ] Remove identifiable, confidential, and nonpublic data before sending content to an external model.
+- [ ] Prompt-injection content cannot change tool permissions or domain rules.
 
-## LinkedIn 發布檢查
+## LinkedIn Release Review
 
-- [ ] 使用「synthetic demo / independent educational project」字樣。
-- [ ] 不寫「production-grade」、「industrial certified」或「deployed in factory」，除非有公開且可驗證證據。
-- [ ] 量測數字包含硬體/OS、資料量、測試方法與日期。
-- [ ] 只說實際跑過的 offline event 數、latency 與 test count。
-- [ ] 影片清楚拍到上游停止、pending 增加、重啟/恢復與 receipt 去重。
-- [ ] 不把邊緣板說成必需品；說明筆電可跑、板子用於獨立故障域與部署實驗。
-- [ ] 不把 AI 畫成放行者；畫面顯示 `explain only`。
+- [ ] Use the phrase "synthetic demo" or "independent educational project."
+- [ ] Do not claim "production-grade," "industrial certified," or "deployed in a factory" without public, verifiable evidence.
+- [ ] Reported measurements include hardware/OS, data volume, test method, and date.
+- [ ] Report only the offline-event count, latency, and test count actually measured.
+- [ ] The video clearly shows the upstream service stopping, the pending count increasing, restart/recovery, and receipt deduplication.
+- [ ] Do not present the edge board as mandatory; explain that the project can run on a laptop and that the board supports independent failure-domain and deployment experiments.
+- [ ] Do not present AI as the release authority; show it as `explain only`.
 
-## 推薦公開聲明
+## Recommended Public Statement
 
-可放在 README 或貼文：
+This statement may appear in the README or a post:
 
 > TraceGate Edge is an independent, synthetic educational project. It does not contain or reproduce any employer, customer, or factory source code, data, schemas, credentials, screenshots, or proprietary workflows. It is not a production MES.
 
-## 正式化之前仍需補足
+## Requirements Before Productionization
 
-若要從作品變成真實產品，至少還需要：
+Moving from a portfolio project to a real product would require, at minimum:
 
-- 身份驗證、RBAC、設備憑證與密鑰輪替。
-- TLS/mTLS、網路分區、防火牆與安全更新策略。
-- Signed artifacts、SBOM、dependency/vulnerability management。
-- 備份/還原、磁碟耗損與斷電一致性測試。
-- 時鐘同步、審計 retention、隱私與資料治理。
-- HA、容量/壓力/長時間 soak test 與故障演練。
-- 變更控制、核准流程、正式 runbook 與 on-call ownership。
-- 依實際產業要求做安全、品質與法規評估。
+- Authentication, RBAC, device certificates, and key rotation.
+- TLS/mTLS, network segmentation, firewalls, and a secure-update policy.
+- Signed artifacts, an SBOM, and dependency/vulnerability management.
+- Backup and restore procedures, storage-wear testing, and power-loss consistency testing.
+- Time synchronization, audit retention, privacy controls, and data governance.
+- High availability, capacity/load/long-duration soak tests, and fault drills.
+- Change control, approval workflows, production runbooks, and on-call ownership.
+- Security, quality, and regulatory assessments appropriate to the actual industry.

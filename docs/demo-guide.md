@@ -1,54 +1,54 @@
-# 3–5 分鐘作品展示指南
+# 3–5 Minute Portfolio Demo Guide
 
-目標不是快速點完所有功能，而是用一條清楚故事證明三件事：**規則會擋錯、斷線不丟資料、恢復不重複。** 所有輸入皆為合成資料。
+The goal is not to click through every feature as quickly as possible. Instead, use one clear story to prove three things: **the rules block invalid operations, an outage does not lose data, and recovery does not create duplicates.** All inputs are synthetic.
 
-## 事前準備
+## Preparation
 
-從 repository 根目錄啟動 combined demo：
+Start the combined demo from the repository root:
 
 ```sh
 TRACEGATE_DEMO_DIR="$(mktemp -d "${TMPDIR:-/tmp}/tracegate-demo.XXXXXX")"
 TRACEGATE_DATA_DIR="$TRACEGATE_DEMO_DIR" python3 -m tracegate demo
 ```
 
-另開一個 terminal：
+Open another terminal:
 
 ```sh
 API=http://127.0.0.1:8080
 curl -s "$API/api/v1/health" | python3 -m json.tool
 ```
 
-瀏覽器可開啟 `http://127.0.0.1:8080/`；目前重點是 JSON API 與可稽核資料，不是假裝完整商用 UI。
+Open `http://127.0.0.1:8080/` in a browser. The current emphasis is on the JSON API and auditable data, not on presenting a prototype as a complete commercial UI.
 
-> `mktemp` 會建立本次專用的暫存資料夾，降低覆寫既有資料的風險。重新錄影前可呼叫 `POST /api/v1/demo/reset`。結束後先停止程序；確認 `$TRACEGATE_DEMO_DIR` 的實際路徑與內容無誤，再自行移除該暫存資料夾。
+> `mktemp` creates a dedicated temporary data directory for this run, reducing the risk of overwriting existing data. Before recording another take, you can call `POST /api/v1/demo/reset`. When finished, stop the process first. Verify the actual path and contents of `$TRACEGATE_DEMO_DIR`, and then remove that temporary directory yourself.
 
-如果要先驗證完整流程而不逐條貼 curl，保持服務運行並在另一個 terminal 執行：
+To validate the complete flow without pasting each curl command individually, keep the service running and execute the following in another terminal:
 
 ```sh
 python3 scripts/demo_smoke.py --wait 30 --journey
 ```
 
-若要加入 upstream outage/recovery 與 50 次本機讀取延遲實測：
+To include an upstream outage/recovery scenario and 50 measured local-read latency samples:
 
 ```sh
 python3 scripts/demo_smoke.py --wait 30 --journey --outage-demo --benchmark 50
 ```
 
-等價 Make targets 是 `make journey` 與 `make resilience`。腳本最後輸出 `SUMMARY {...}`；保留這份輸出，公開時只引用實際標為 `MEASURED` 的數字。
+The equivalent Make targets are `make journey` and `make resilience`. The script ends with `SUMMARY {...}`. Preserve that output, and only publish figures explicitly labeled `MEASURED`.
 
-## 影片腳本
+## Video Script
 
-### 0:00–0:30：定位與架構
+### 0:00–0:30: Positioning and Architecture
 
-旁白：
+Narration:
 
 > TraceGate Edge is an independent synthetic manufacturing traceability project. The edge node enforces deterministic route, identity, material, and repair rules locally. SQLite stores current WIP, event history, and a transactional outbox. A separate mock receiver represents the upstream system. AI may explain reason codes, but it never authorizes PASS.
 
-畫面顯示 README 架構圖與 `/api/v1/health`。強調這不是正式 MES，也沒有使用任何真實工廠資料或內部 source。
+Show the README architecture diagram and `/api/v1/health`. Emphasize that this is not a production MES and that it contains no real factory data or internal source code.
 
-### 0:30–1:15：先證明 fail closed
+### 0:30–1:15: Prove Fail-Closed Behavior First
 
-先故意要求新產品跳到 MAC 站：
+Intentionally ask a new product to skip ahead to the MAC station:
 
 ```sh
 curl -s -X POST "$API/api/v1/stations/complete" \
@@ -57,17 +57,17 @@ curl -s -X POST "$API/api/v1/stations/complete" \
   | python3 -m json.tool
 ```
 
-應看到 `ROUTE_VIOLATION`，再查 WIP 仍在 `ST-IN`：
+The response should contain `ROUTE_VIOLATION`. Then confirm that WIP remains at `ST-IN`:
 
 ```sh
 curl -s "$API/api/v1/units/ACN-DEMO-0001" | python3 -m json.tool
 ```
 
-這一幕的重點：不是 UI 顯示紅字而已，而是 WIP 沒有被錯誤前進。
+The point of this scene is that the system did more than display a red message: WIP did not advance incorrectly.
 
-### 1:15–2:00：身份不是只有格式
+### 1:15–2:00: Identity Is More Than Format
 
-正常完成 intake：
+Complete intake normally:
 
 ```sh
 curl -s -X POST "$API/api/v1/stations/complete" \
@@ -76,7 +76,7 @@ curl -s -X POST "$API/api/v1/stations/complete" \
   | python3 -m json.tool
 ```
 
-使用格式正確、但屬於 `ACN-DEMO-0002` 的合成 MAC：
+Use a syntactically valid synthetic MAC that belongs to `ACN-DEMO-0002`:
 
 ```sh
 curl -s -X POST "$API/api/v1/mac/check" \
@@ -85,7 +85,7 @@ curl -s -X POST "$API/api/v1/mac/check" \
   | python3 -m json.tool
 ```
 
-應看到 `ASSOCIATION_MISMATCH`。接著用正確綁定：
+The response should contain `ASSOCIATION_MISMATCH`. Next, use the correct binding:
 
 ```sh
 curl -s -X POST "$API/api/v1/mac/check" \
@@ -99,11 +99,11 @@ curl -s -X POST "$API/api/v1/stations/complete" \
   | python3 -m json.tool
 ```
 
-重點：格式有效不等於關聯有效；ACN、interface 與 MAC 必須同時匹配。
+Key point: valid format does not imply a valid association. The ACN, interface, and MAC must all match.
 
-### 2:00–3:00：關鍵料與離線 commit
+### 2:00–3:00: Key Parts and Offline Commit
 
-完成一顆 controller 與兩顆 sensor；第二顆 sensor 刻意使用核准替代料：
+Collect one controller and two sensors. Intentionally use an approved substitute for the second sensor:
 
 ```sh
 curl -s -X POST "$API/api/v1/key-parts/collect" \
@@ -122,7 +122,7 @@ curl -s -X POST "$API/api/v1/key-parts/collect" \
   | python3 -m json.tool
 ```
 
-現在停止 synthetic upstream（只有 combined demo 提供此控制）：
+Now stop the synthetic upstream service. This control is available only in the combined demo:
 
 ```sh
 curl -s -X POST "$API/api/v1/demo/mes" \
@@ -130,7 +130,7 @@ curl -s -X POST "$API/api/v1/demo/mes" \
   | python3 -m json.tool
 ```
 
-完成 material station：
+Complete the material station:
 
 ```sh
 curl -s -X POST "$API/api/v1/stations/complete" \
@@ -141,11 +141,11 @@ curl -s -X POST "$API/api/v1/stations/complete" \
 curl -s "$API/api/v1/outbox" | python3 -m json.tool
 ```
 
-指出：本地 station event 與 WIP 已 commit，但 delivery 是 `RETRY`/`PENDING`，沒有謊稱上游已收到。
+Point out that the local station event and WIP state have committed, while delivery remains `RETRY`/`PENDING`. The system does not falsely claim that the upstream service received the event.
 
-### 3:00–4:00：恢復、去重與 trace
+### 3:00–4:00: Recovery, Deduplication, and Traceability
 
-把上游恢復：
+Restore the upstream service:
 
 ```sh
 curl -s -X POST "$API/api/v1/demo/mes" \
@@ -157,7 +157,7 @@ curl -s "$API/api/v1/outbox" | python3 -m json.tool
 curl -s "$API/api/v1/units/ACN-DEMO-0001/trace" | python3 -m json.tool
 ```
 
-再次送出完全相同的 material station request：
+Send the exact same material-station request again:
 
 ```sh
 curl -s -X POST "$API/api/v1/stations/complete" \
@@ -166,25 +166,25 @@ curl -s -X POST "$API/api/v1/stations/complete" \
   | python3 -m json.tool
 ```
 
-應回既有結果並標示 idempotent replay，不新增 event、不讓 WIP 再前進。
+The API should return the existing result and identify the request as an idempotent replay. It must not create another event or advance WIP again.
 
-### 4:00–5:00：結論
+### 4:00–5:00: Conclusion
 
-畫面切到 metrics 與 claim–evidence matrix：
+Switch the screen to metrics and the claim–evidence matrix:
 
 ```sh
 curl -s "$API/api/v1/metrics" | python3 -m json.tool
 ```
 
-旁白：
+Narration:
 
 > The important part is not the number of screens. It is the evidence chain: deterministic validation, atomic local state, durable retry, and idempotent receipt. The next steps are authentication, signed configuration, operational tests, and real I/O adapters—not giving an AI model permission to pass products.
 
-## 延伸場景：FAIL → repair → attempt 2 retest
+## Extended Scenario: FAIL → Repair → Attempt 2 Retest
 
-這段適合完整 GitHub demo，不必全部塞進 3–5 分鐘影片。
+This segment is appropriate for the complete GitHub demo; it does not need to fit into the 3–5 minute video.
 
-在 `ST-FT` 產生合成失敗，並把 defect ID 存成 shell 變數：
+Create a synthetic failure at `ST-FT` and store the defect ID in a shell variable:
 
 ```sh
 DEFECT_ID="$(curl -s -X POST "$API/api/v1/stations/complete" \
@@ -194,7 +194,7 @@ DEFECT_ID="$(curl -s -X POST "$API/api/v1/stations/complete" \
 printf '%s\n' "$DEFECT_ID"
 ```
 
-記錄 repair action，再完成 repair station：
+Record a repair action, and then complete the repair station:
 
 ```sh
 curl -s -X POST "$API/api/v1/repairs/actions" \
@@ -213,30 +213,30 @@ curl -s -X POST "$API/api/v1/stations/complete" \
   | python3 -m json.tool
 ```
 
-Trace 應同時保留 attempt 1 FAIL、repair 與 attempt 2 PASS，不能把先前失敗覆蓋掉。
+The trace should preserve the attempt 1 FAIL, repair, and attempt 2 PASS. It must not overwrite the earlier failure.
 
-## 分離故障域（作品影片推薦）
+## Separate Failure Domains (Recommended for the Portfolio Video)
 
-更可信的展示是在兩個程序，甚至兩台機器上執行：
+A more credible demonstration runs the components as two processes, or even on two separate machines:
 
 ```sh
 # Upstream host
 TRACEGATE_MOCK_MES_HOST=0.0.0.0 python3 -m tracegate mock-mes
 
-# Edge host；192.0.2.10 僅為文件示例，請換成你的受信任 LAN 位址
+# Edge host; 192.0.2.10 is documentation-only—replace it with an address on your trusted LAN
 TRACEGATE_MES_URL=http://192.0.2.10:8081/api/v1/trace-events \
   python3 -m tracegate edge
 ```
 
-停止 upstream 程序來製造真實連線失敗；不要只按前端切換鈕。公開畫面前請遮蔽真實 LAN IP 與使用者名稱。
+Stop the upstream process to create a real connection failure; do not rely only on a front-end toggle. Before publishing any footage, redact real LAN IP addresses and usernames.
 
-## Demo 驗收
+## Demo Acceptance Checklist
 
-- [ ] 錯站被拒絕，WIP 不變。
-- [ ] 格式有效但關聯錯誤的 MAC 被拒絕。
-- [ ] BOM 數量滿足前不能完成 material station。
-- [ ] Upstream offline 時本地 event/outbox 存在。
-- [ ] Online 後變成 delivered。
-- [ ] 同 request replay 沒有第二筆 event。
-- [ ] Trace 可解釋每一步與 reason code。
-- [ ] 影片中沒有真實資料、路徑、IP、帳號或秘密。
+- [ ] An out-of-sequence station is rejected, and WIP remains unchanged.
+- [ ] A syntactically valid MAC associated with the wrong product is rejected.
+- [ ] The material station cannot complete until BOM quantities are satisfied.
+- [ ] While the upstream service is offline, the local event and outbox record still exist.
+- [ ] After recovery, the event becomes delivered.
+- [ ] Replaying the same request does not create a second event.
+- [ ] The trace explains every step and reason code.
+- [ ] The video contains no real data, paths, IP addresses, accounts, or secrets.

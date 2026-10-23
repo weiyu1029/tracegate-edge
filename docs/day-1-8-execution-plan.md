@@ -202,7 +202,7 @@ Acceptance gate:
 - WIP and station history remain queryable.
 - Recovery delivers the same number of unique upstream receipts.
 - No duplicate business record is created.
-- Benchmark output is labelled as a measurement from that environment, not a
+- Benchmark output is labeled as a measurement from that environment, not a
   production claim.
 
 ## Day 7 — Deploy the same source tree to Portenta X8
