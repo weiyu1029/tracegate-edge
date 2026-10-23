@@ -1,4 +1,4 @@
-name: CI
+name: TraceGate CI
 
 on:
   push:
@@ -8,7 +8,8 @@ permissions:
   contents: read
 
 jobs:
-  verify:
+  edge-runtime:
+    name: Edge runtime / Python ${{ matrix.python-version }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -30,5 +31,51 @@ jobs:
       - name: Run unit and integration tests
         run: python -m unittest discover -s tests -p 'test_*.py' -v
 
-      - name: Check public-release safety
+  dotnet-mes-lab:
+    name: MES lab / .NET 10
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: labs/dotnet-mes
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Set up Python test harness
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Restore .NET dependencies
+        run: dotnet restore src/TraceGate.MesLab
+
+      - name: Build the MES lab
+        run: dotnet build src/TraceGate.MesLab --no-restore
+
+      - name: Run real-process integration tests
+        run: python -m unittest discover -s tests -v
+
+      - name: Validate browser JavaScript syntax
+        run: node --check src/TraceGate.MesLab/wwwroot/app.js
+
+  public-release:
+    name: Public release safety
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Scan tracked portfolio content
         run: python scripts/public_release_check.py .

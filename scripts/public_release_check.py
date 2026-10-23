@@ -35,9 +35,11 @@ SKIP_DIRECTORIES = {
     ".vscode",
     "__pycache__",
     "build",
+    "bin",
     "dist",
     "htmlcov",
     "node_modules",
+    "obj",
     "venv",
 }
 

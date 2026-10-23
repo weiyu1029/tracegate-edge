@@ -1,9 +1,11 @@
 # Multi-language implementation strategy
 
-TraceGate Edge currently has one working implementation: the Python reference
-implementation in the repository root. The project is intentionally designed
-so that future implementations can use other languages without changing the
-manufacturing rules or overstating feature parity.
+TraceGate has one working **edge runtime implementation**: the Python reference
+implementation in the repository root. The repository also contains a scoped
+C# / ASP.NET Core application under `labs/dotnet-mes/`. That application is a
+companion MES learning lab, not a conformant port of the edge runtime. This
+distinction allows the portfolio to demonstrate multiple languages without
+overstating feature parity.
 
 ## Why Python is the reference today
 
@@ -32,11 +34,19 @@ Future ports should preserve these boundaries:
 
 These are behavioral contracts, not Python-specific implementation details.
 
-## Planned repository evolution
+## Current and planned repository evolution
 
-The current layout stays unchanged while the Python version is the only
-implementation. Moving working code now would add churn without demonstrating
-new capability. When the first additional language is started, the repository
+The current layout keeps the stable Python commands at the repository root and
+isolates the smaller C# domain under `labs/`:
+
+```text
+tracegate/                     Python reference edge runtime
+tests/                         Python domain, HTTP, and outbox tests
+labs/dotnet-mes/               scoped C# MES learning application
+docs/feature-matrix.md         explicit capability and parity limits
+```
+
+When a shared contract and a true alternative runtime exist, the repository
 can evolve toward:
 
 ```text
@@ -51,20 +61,23 @@ hardware/                      scanner, GPIO, and board integration notes
 docs/                          architecture, evidence, and decision records
 ```
 
-That migration should be a dedicated, tested change. Existing commands and
-Git history should remain usable through wrappers or documented replacements.
+The .NET lab stays under `labs/` unless it adopts the shared contract and passes
+tests appropriate to a production component role. A future migration should be
+a dedicated, tested change. Existing commands and Git history should remain
+usable through wrappers or documented replacements.
 
 ## Candidate languages and their purpose
 
 | Language | Useful project role | Evidence required before claiming support |
 | --- | --- | --- |
+| C# | Current work-order and operator-facing MES learning lab | Its own 22-test integration suite; full edge parity is not claimed |
 | TypeScript | Operator UI, API gateway, or browser-facing tooling | Contract tests, idempotency tests, and a runnable demo |
 | Rust | Small-footprint edge service or device integration | SQLite transaction parity, recovery tests, and target-board measurements |
 | Go | Concurrent delivery worker or upstream gateway | Retry/lease parity, failure injection, and interoperability tests |
 | C/C++ | MCU, GPIO, CAN, or scanner bridge | Hardware-in-the-loop tests and a documented safety boundary |
 
-This table is a roadmap, not a statement that these implementations already
-exist.
+Except for the explicitly scoped C# lab, this table is a roadmap rather than a
+statement that additional implementations already exist.
 
 ## Conformance requirements
 
@@ -91,9 +104,11 @@ another runtime or board.
 2. Extract OpenAPI, event schemas, and sanitized fixtures from observed
    behavior.
 3. Build a language-neutral conformance runner.
-4. Add a second implementation for a clearly defined purpose.
-5. Publish a parity matrix showing implemented, tested, and unimplemented
-   capabilities for every language.
+4. Connect the edge outbox to a versioned receiver and prove outage recovery
+   across the process boundary.
+5. Promote or add another language component only for a clearly defined role.
+6. Keep the [feature matrix](feature-matrix.md) current for every language and
+   component.
 
 This sequence keeps the portfolio credible: every language demonstrates a
 reasoned engineering tradeoff instead of duplicating the same code for visual

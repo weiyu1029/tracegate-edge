@@ -33,6 +33,11 @@ build/
 dist/
 *.egg-info/
 
+# .NET companion lab.
+**/bin/
+**/obj/
+**/App_Data/
+
 # Editors and operating systems.
 .DS_Store
 .idea/

@@ -1,0 +1,11 @@
+**/bin/
+**/obj/
+**/App_Data/
+*.db
+*.db-shm
+*.db-wal
+*.log
+.env
+.DS_Store
+__pycache__/
+.vs/

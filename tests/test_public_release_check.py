@@ -34,6 +34,18 @@ class PublicReleaseCheckTests(unittest.TestCase):
         self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
         self.assertIn("data/tracegate.db: sensitive-file", result.stderr)
 
+    def test_database_inside_dotnet_app_data_is_rejected(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            root = Path(temporary_directory)
+            database = root / "labs" / "dotnet-mes" / "App_Data" / "tracegate-mes-lab.db"
+            database.parent.mkdir(parents=True)
+            database.write_bytes(b"SQLite format 3\x00synthetic")
+
+            result = self.run_scanner(root)
+
+        self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
+        self.assertIn("App_Data/tracegate-mes-lab.db: sensitive-file", result.stderr)
+
     def test_sqlite_sidecars_are_rejected(self) -> None:
         sidecar_names = (
             "tracegate.db-wal",
